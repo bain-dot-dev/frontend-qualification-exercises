@@ -18,12 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Check,
   Ban,
   CircleCheck,
   CircleAlert,
@@ -57,13 +54,6 @@ interface MembersResponse {
   };
 }
 
-interface SearchResponse {
-  membersByName?: Member[];
-  membersByEmailAddress?: Member[];
-  membersByMobileNumber?: Member[];
-  membersByDomain?: Member[];
-}
-
 // New interface for filter options
 interface FilterOptions {
   names: string[];
@@ -72,6 +62,24 @@ interface FilterOptions {
   domains: string[];
   verificationStatuses: string[];
   statuses: string[];
+}
+
+// Define proper filter interface instead of using any
+interface MemberFilter {
+  verificationStatus?: { equal: string };
+  status?: { equal: string };
+  name?: { equal: string } | { in: string[] };
+  emailAddress?: { equal: string } | { in: string[] };
+  mobileNumber?: { equal: string } | { in: string[] };
+  domain?: { equal: string } | { in: string[] };
+  dateTimeCreated?: {
+    greaterThanOrEqual?: string;
+    lesserThanOrEqual?: string;
+  };
+  dateTimeLastActive?: {
+    greaterThanOrEqual?: string;
+    lesserThanOrEqual?: string;
+  };
 }
 
 // Use the exact queries provided by the user
@@ -124,89 +132,15 @@ const FILTER_OPTIONS_QUERY = `
   }
 `;
 
-const SEARCH_BY_NAME_QUERY = `
-  query ($search: String!) {
-    membersByName(search: $search, first: 20) {
-      id
-      name
-      verificationStatus
-      depositsCount
-      emailAddress
-      mobileNumber
-      domain
-      dateTimeCreated
-      dateTimeLastActive
-      status
-    }
-  }
-`;
-
-const SEARCH_BY_EMAIL_QUERY = `
-  query ($search: String!) {
-    membersByEmailAddress(search: $search, first: 20) {
-      id
-      name
-      verificationStatus
-      depositsCount
-      emailAddress
-      mobileNumber
-      domain
-      dateTimeCreated
-      dateTimeLastActive
-      status
-    }
-  }
-`;
-
-const SEARCH_BY_MOBILE_QUERY = `
-  query ($search: String!) {
-    membersByMobileNumber(search: $search, first: 20) {
-      id
-      name
-      verificationStatus
-      depositsCount
-      emailAddress
-      mobileNumber
-      domain
-      dateTimeCreated
-      dateTimeLastActive
-      status
-    }
-  }
-`;
-
-const SEARCH_BY_DOMAIN_QUERY = `
-  query ($search: String!) {
-    membersByDomain(search: $search, first: 20) {
-      id
-      name
-      verificationStatus
-      depositsCount
-      emailAddress
-      mobileNumber
-      domain
-      dateTimeCreated
-      dateTimeLastActive
-      status
-    }
-  }
-`;
-
 export default function MembersTable() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [pageHistory, setPageHistory] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<
-    "name" | "email" | "mobile" | "domain"
-  >("name");
 
   // New state for filter options
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -299,8 +233,8 @@ export default function MembersTable() {
         setLoading(true);
         setError(null);
 
-        // Build filter object
-        const filter: { [key: string]: any } = {};
+        // Build filter object with proper typing
+        const filter: MemberFilter = {};
         if (selectedVerificationStatus) {
           filter.verificationStatus = {
             equal: selectedVerificationStatus.toUpperCase(),
@@ -402,90 +336,39 @@ export default function MembersTable() {
     ]
   );
 
-  // Search members using the provided search queries
-  const searchMembers = useCallback(
-    async (term: string, type: typeof searchType) => {
-      if (!term.trim()) {
-        setIsSearching(false);
-        setCurrentPage(1);
-        fetchMembers();
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        setIsSearching(true);
-
-        const queryMap = {
-          name: SEARCH_BY_NAME_QUERY,
-          email: SEARCH_BY_EMAIL_QUERY,
-          mobile: SEARCH_BY_MOBILE_QUERY,
-          domain: SEARCH_BY_DOMAIN_QUERY,
-        };
-
-        const query = queryMap[type];
-        const variables = { search: term };
-
-        const response = await graphqlClient.request<SearchResponse>(
-          query,
-          variables
-        );
-
-        // Extract members from the response based on search type
-        const searchResults =
-          response[
-            `membersBy${
-              type.charAt(0).toUpperCase() + type.slice(1)
-            }` as keyof SearchResponse
-          ] || [];
-
-        setMembers(Array.isArray(searchResults) ? searchResults : []);
-        setHasNextPage(false);
-        setEndCursor(null);
-        setPageHistory([]);
-        setCurrentPage(1);
-      } catch (err) {
-        setError(
-          "Failed to search members. Please check your GraphQL endpoint and authentication."
-        );
-        console.error("Error searching members:", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [fetchMembers]
-  );
-
   // Initial load - fetch both filter options and members
   useEffect(() => {
     fetchFilterOptions();
-    fetchMembers();
-  }, [fetchFilterOptions, fetchMembers]);
+  }, [fetchFilterOptions]);
 
-  // Search with debouncing
+  // Initial fetch of members after filter options are loaded
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm) {
-        searchMembers(searchTerm, searchType);
-      } else {
-        setIsSearching(false);
-        setCurrentPage(1);
-        fetchMembers();
-      }
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm, searchType, searchMembers]);
-
-  // Reset pagination when entries per page changes
-  useEffect(() => {
-    if (!isSearching) {
-      setCurrentPage(1);
-      setPageHistory([]);
+    if (!filterOptionsLoading) {
       fetchMembers();
     }
-  }, [entriesPerPage, isSearching, fetchMembers]);
+  }, [filterOptionsLoading, fetchMembers]);
+
+  // Separate useEffect for when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setPageHistory([]);
+    fetchMembers();
+  }, [
+    entriesPerPage,
+    selectedVerificationStatus,
+    selectedStatus,
+    selectedName,
+    selectedEmail,
+    selectedMobile,
+    selectedDomain,
+    dateRegisteredRange.start,
+    dateRegisteredRange.end,
+    dateLastActiveRange.start,
+    dateLastActiveRange.end,
+    fetchMembers,
+  ]);
+
+  // Search with debouncing - removed since search functionality is not implemented in the UI
 
   const getVerificationBadge = (status: string) => {
     const config = {
@@ -578,31 +461,15 @@ export default function MembersTable() {
     );
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedMembers(members.map((member) => member.id));
-    } else {
-      setSelectedMembers([]);
-    }
-  };
-
-  const handleSelectMember = (memberId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedMembers((prev) => [...prev, memberId]);
-    } else {
-      setSelectedMembers((prev) => prev.filter((id) => id !== memberId));
-    }
-  };
-
   const handleNextPage = () => {
-    if (hasNextPage && endCursor && !isSearching) {
+    if (hasNextPage && endCursor) {
       fetchMembers(endCursor, true);
       setCurrentPage((prev) => prev + 1);
     }
   };
 
   const handlePrevPage = () => {
-    if (currentPage > 1 && !isSearching) {
+    if (currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
 
       // Get the previous cursor from history
@@ -789,7 +656,7 @@ export default function MembersTable() {
           <TableBody className="bg-[#0C1820]">
             {loading && members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mr-2"></div>
                     Loading members...
@@ -799,12 +666,10 @@ export default function MembersTable() {
             ) : members.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center py-8 text-gray-400"
                 >
-                  {isSearching
-                    ? "No members found matching your search."
-                    : "No members found."}
+                  No members found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -875,7 +740,7 @@ export default function MembersTable() {
           <Button
             variant="outline"
             onClick={handlePrevPage}
-            disabled={currentPage === 1 || loading || isSearching}
+            disabled={currentPage === 1 || loading}
             className="bg-transparent border-gray-600 text-white hover:bg-gray-700 rounded-r-none"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -887,7 +752,7 @@ export default function MembersTable() {
           <Button
             variant="outline"
             onClick={handleNextPage}
-            disabled={!hasNextPage || loading || isSearching}
+            disabled={!hasNextPage || loading}
             className="bg-transparent border-gray-600 text-white hover:bg-gray-700 rounded-l-none"
           >
             Next

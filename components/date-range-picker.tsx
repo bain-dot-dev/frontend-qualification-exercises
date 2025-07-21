@@ -307,9 +307,9 @@ export function DateRangePicker({
                   day.isCurrentMonth
                     ? `text-white hover:bg-gray-700 ${
                         isStart || isEnd
-                          ? "bg-yellow-500 text-black font-medium"
+                          ? "bg-[#F2BF4E] text-black font-medium"
                           : inRange
-                          ? "bg-yellow-200 text-black"
+                          ? "bg-[#98712B] text-black"
                           : ""
                       }`
                     : "text-gray-500"
@@ -352,8 +352,8 @@ export function DateRangePicker({
             hasSelectedRange ? "text-[#7A7A7A]" : "text-white"
           }`}
         >
-          {/* {hasSelectedRange ? getDisplayText() : placeholder} */}{" "}
-          {placeholder}
+          {hasSelectedRange ? getDisplayText() : placeholder}{" "}
+          {/* {placeholder} */}
           <ChevronDown className="size-5 text-[#C2C2C2]" />
         </Button>
       </PopoverTrigger>
@@ -363,7 +363,7 @@ export function DateRangePicker({
       >
         <div className="flex">
           {/* Preset Options */}
-          <div className="w-48 p-4 border-r border-[#2F3235]">
+          <div className="w-44 p-4 border-r border-[#2F3235]">
             <div className="space-y-2">
               {presetOptions.map((option) => (
                 <button
@@ -392,37 +392,28 @@ export function DateRangePicker({
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-600">
               <div className="flex items-center gap-4">
                 <div className="flex items-center border border-[#1D2226] rounded-md">
-                  <span className="text-white border-r border-[#1D2226] p-2">
+                  <span className="text-[#BBBCBD] border-r border-[#1D2226] p-2">
                     {formatDate(tempRange.start) || "Start date"}
                   </span>
-                  <span className="text-gray-400 p-2">
+                  <span className="text-[#BBBCBD] p-2">
                     {formatTime(tempRange.start)}
                   </span>
                 </div>
-                <span className="text-gray-400">–</span>
+                <span className="text-[#BBBCBD]">–</span>
                 <div className="flex items-center border border-[#1D2226] rounded-md">
-                  <span className="text-white border-r border-[#1D2226] p-2">
+                  <span className="text-[#BBBCBD] border-r border-[#1D2226] p-2">
                     {formatDate(tempRange.end) || "End date"}
                   </span>
-                  <span className="text-gray-400 p-2">
+                  <span className="text-[#BBBCBD] p-2">
                     {formatTime(tempRange.end)}
                   </span>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                {hasSelectedRange && (
-                  <Button
-                    variant="outline"
-                    onClick={handleClear}
-                    className="bg-transparent border-gray-500 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md"
-                  >
-                    Clear
-                  </Button>
-                )}
                 <Button
                   variant="outline"
-                  onClick={handleCancel}
+                  onClick={hasSelectedRange ? handleClear : handleCancel}
                   className="bg-transparent border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black rounded-md"
                 >
                   Cancel

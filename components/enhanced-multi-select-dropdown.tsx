@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ChevronDownIcon, Search, X } from "lucide-react";
+import { ChevronDownIcon, Search} from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 interface EnhancedMultiSelectDropdownProps {
   placeholder: string;
@@ -19,7 +19,7 @@ export function EnhancedMultiSelectDropdown({
   options,
   onSelectionChange,
   searchPlaceholder = "Search...",
-  maxDisplayItems = 3,
+  // maxDisplayItems = 3,
 }: EnhancedMultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,14 +53,14 @@ export function EnhancedMultiSelectDropdown({
     onSelectionChange?.([]);
   };
 
-  const getDisplayText = () => {
-    if (selectedItems.length === 0) return placeholder;
-    if (selectedItems.length === 1) return selectedItems[0];
-    if (selectedItems.length <= maxDisplayItems) {
-      return selectedItems.join(", ");
-    }
-    return `${selectedItems.length} items selected`;
-  };
+  // const getDisplayText = () => {
+  //   if (selectedItems.length === 0) return placeholder;
+  //   if (selectedItems.length === 1) return selectedItems[0];
+  //   if (selectedItems.length <= maxDisplayItems) {
+  //     return selectedItems.join(", ");
+  //   }
+  //   return `${selectedItems.length} items selected`;
+  // };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -103,7 +103,7 @@ export function EnhancedMultiSelectDropdown({
           </div>
 
           {/* Select All Option */}
-          {/* {filteredOptions.length > 1 && (
+          {filteredOptions.length > 1 && (
             <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-600">
               <Checkbox
                 id="select-all"
@@ -123,7 +123,7 @@ export function EnhancedMultiSelectDropdown({
                 Select All ({filteredOptions.length})
               </label>
             </div>
-          )} */}
+          )}
 
           {/* Options List */}
           <div className="space-y-3 max-h-60 overflow-y-auto">
